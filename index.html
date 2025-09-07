@@ -1,0 +1,1081 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>交易员多资产管理系统</title>
+    <style>
+        :root {
+            --primary-color: #1a1a3e;
+            --secondary-color: #3a3a6e;
+            --accent-color: #5a5aae;
+            --profit-color: #ff4d4d;
+            --loss-color: #4dff4d;
+            --text-color: #ffffff;
+            --card-bg: rgba(37, 32, 74, 0.8);
+            --input-bg: rgba(255, 255, 255, 0.1);
+            --border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--primary-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 476px;
+            height: 100vh;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header {
+            padding: 20px;
+            text-align: center;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 10;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            padding-bottom: 100px;
+        }
+
+        .page {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .calendar-container {
+            background-color: var(--card-bg);
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .calendar-header h2 {
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .calendar-nav {
+            display: flex;
+            gap: 10px;
+        }
+
+        .calendar-nav button {
+            background: var(--input-bg);
+            border: none;
+            color: var(--text-color);
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .calendar-nav button:hover {
+            background: var(--accent-color);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+        }
+
+        .calendar-day-header {
+            text-align: center;
+            font-size: 12px;
+            padding: 8px 0;
+            opacity: 0.7;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+            background: var(--input-bg);
+            font-size: 14px;
+        }
+
+        .calendar-day:hover {
+            background: var(--accent-color);
+        }
+
+        .calendar-day.has-data {
+            font-weight: bold;
+        }
+
+        .calendar-day.profit {
+            background-color: var(--profit-color);
+        }
+
+        .calendar-day.loss {
+            background-color: var(--loss-color);
+        }
+
+        .calendar-day .balance {
+            font-size: 10px;
+            margin-top: 2px;
+        }
+
+        .stats-container {
+            background-color: var(--card-bg);
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .stats-title {
+            font-size: 18px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+            backdrop-filter: blur(5px);
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .stat-card.full-width {
+            grid-column: span 2;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .stat-value.positive {
+            color: var(--profit-color);
+        }
+
+        .stat-value.negative {
+            color: var(--loss-color);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 100;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--secondary-color);
+            border-radius: 15px;
+            padding: 20px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h3 {
+            font-size: 18px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-color);
+            font-size: 24px;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .modal-close:hover {
+            opacity: 1;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+        }
+
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-color);
+            font-size: 14px;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background: var(--accent-color);
+            color: var(--text-color);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-color);
+        }
+
+        .btn-secondary {
+            background: var(--input-bg);
+            color: var(--text-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color);
+        }
+
+        .navigation {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--secondary-color);
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 100;
+        }
+
+        .nav-container {
+            max-width: 476px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .nav-item.active {
+            background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
+            transform: scale(1.1);
+            box-shadow: 0 5px 15px rgba(90, 90, 174, 0.4);
+        }
+
+        .nav-item:not(.active) {
+            opacity: 0.6;
+        }
+
+        .nav-item:hover:not(.active) {
+            opacity: 0.8;
+        }
+
+        .nav-icon {
+            width: 30px;
+            height: 30px;
+            margin-bottom: 5px;
+            filter: brightness(0) invert(1);
+        }
+
+        .nav-label {
+            font-size: 10px;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 10px;
+            font-size: 12px;
+            opacity: 0.7;
+            background: var(--secondary-color);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>交易员多资产管理系统</h1>
+            <p>追踪您的投资表现</p>
+        </div>
+
+        <div class="content">
+            <!-- 黄金页面 -->
+            <div class="page active" id="gold-page">
+                <div class="calendar-container">
+                    <div class="calendar-header">
+                        <h2 id="gold-month-year">2023年9月</h2>
+                        <div class="calendar-nav">
+                            <button id="gold-prev-month">&lt;</button>
+                            <button id="gold-next-month">&gt;</button>
+                        </div>
+                    </div>
+                    <div class="calendar-grid" id="gold-calendar">
+                        <!-- 日历将通过JS生成 -->
+                    </div>
+                </div>
+
+                <div class="stats-container">
+                    <h3 class="stats-title">当月统计</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">当日盈亏金额</div>
+                            <div class="stat-value" id="gold-daily-pnl">¥0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">当月入金金额</div>
+                            <div class="stat-value" id="gold-monthly-deposit">¥0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">当月出金金额</div>
+                            <div class="stat-value" id="gold-monthly-withdrawal">¥0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">平均日复利</div>
+                            <div class="stat-value" id="gold-avg-daily-return">0%</div>
+                        </div>
+                        <div class="stat-card full-width">
+                            <div class="stat-label">当月盈亏金额</div>
+                            <div class="stat-value" id="gold-monthly-pnl">¥0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 加密货币页面 -->
+            <div class="page" id="crypto-page">
+                <div class="calendar-container">
+                    <div class="calendar-header">
+                        <h2 id="crypto-month-year">2023年9月</h2>
+                        <div class="calendar-nav">
+                            <button id="crypto-prev-month">&lt;</button>
+                            <button id="crypto-next-month">&gt;</button>
+                        </div>
+                    </div>
+                    <div class="calendar-grid" id="crypto-calendar">
+                        <!-- 日历将通过JS生成 -->
+                    </div>
+                </div>
+
+                <div class="stats-container">
+                    <h3 class="stats-title">当月统计</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">当日盈亏金额</div>
+                            <div class="stat-value" id="crypto-daily-pnl">¥0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">当月入金金额</div>
+                            <div class="stat-value" id="crypto-monthly-deposit">¥0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">当月出金金额</div>
+                            <div class="stat-value" id="crypto-monthly-withdrawal">¥0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">平均日复利</div>
+                            <div class="stat-value" id="crypto-avg-daily-return">0%</div>
+                        </div>
+                        <div class="stat-card full-width">
+                            <div class="stat-label">当月盈亏金额</div>
+                            <div class="stat-value" id="crypto-monthly-pnl">¥0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 期货页面 -->
+            <div class="page" id="futures-page">
+                <div class="calendar-container">
+                    <div class="calendar-header">
+                        <h2 id="futures-month-year">2023年9月</h2>
+                        <div class="calendar-nav">
+                            <button id="futures-prev-month">&lt;</button>
+                            <button id="futures-next-month">&gt;</button>
+                        </div>
+                    </div>
+                    <div class="calendar-grid" id="futures-calendar">
+                        <!-- 日历将通过JS生成 -->
+                    </div>
+                </div>
+
+                <div class="stats-container">
+                    <h3 class="stats-title">当月统计</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">当日盈亏金额</div>
+                            <div class="stat-value" id="futures-daily-pnl">¥0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">当月入金金额</div>
+                            <div class="stat-value" id="futures-monthly-deposit">¥0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">当月出金金额</div>
+                            <div class="stat-value" id="futures-monthly-withdrawal">¥0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">平均日复利</div>
+                            <div class="stat-value" id="futures-avg-daily-return">0%</div>
+                        </div>
+                        <div class="stat-card full-width">
+                            <div class="stat-label">当月盈亏金额</div>
+                            <div class="stat-value" id="futures-monthly-pnl">¥0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 股票页面 -->
+            <div class="page" id="stocks-page">
+                <div class="calendar-container">
+                    <div class="calendar-header">
+                        <h2 id="stocks-month-year">2023年9月</h2>
+                        <div class="calendar-nav">
+                            <button id="stocks-prev-month">&lt;</button>
+                            <button id="stocks-next-month">&gt;</button>
+                        </div>
+                    </div>
+                    <div class="calendar-grid" id="stocks-calendar">
+                        <!-- 日历将通过JS生成 -->
+                    </div>
+                </div>
+
+                <div class="stats-container">
+                    <h3 class="stats-title">当月统计</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-label">当日盈亏金额</div>
+                            <div class="stat-value" id="stocks-daily-pnl">¥0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">当月入金金额</div>
+                            <div class="stat-value" id="stocks-monthly-deposit">¥0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">当月出金金额</div>
+                            <div class="stat-value" id="stocks-monthly-withdrawal">¥0</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-label">平均日复利</div>
+                            <div class="stat-value" id="stocks-avg-daily-return">0%</div>
+                        </div>
+                        <div class="stat-card full-width">
+                            <div class="stat-label">当月盈亏金额</div>
+                            <div class="stat-value" id="stocks-monthly-pnl">¥0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="navigation">
+            <div class="nav-container">
+                <div class="nav-item active" data-page="gold-page">
+                    <img src=![image]("https://autoglm-agent.aminer.cn/ac2cf28e-a78d-451a-baa3-954371cca85f.jpg)" alt="黄金" class="nav-icon">
+                    <span class="nav-label">黄金</span>
+                </div>
+                <div class="nav-item" data-page="crypto-page">
+                    <img src=![image]("https://autoglm-agent.aminer.cn/7039b95f-3b27-4af3-ab49-4aef2742cc84.jpg)" alt="加密货币" class="nav-icon">
+                    <span class="nav-label">加密货币</span>
+                </div>
+                <div class="nav-item" data-page="futures-page">
+                    <img src=![image]("https://autoglm-agent.aminer.cn/943f9d3f-37c2-405d-bb7e-31b4e4913301.jpg)" alt="期货" class="nav-icon">
+                    <span class="nav-label">期货</span>
+                </div>
+                <div class="nav-item" data-page="stocks-page">
+                    <img src=![image]("https://autoglm-agent.aminer.cn/741ae14a-b759-43de-8438-871a2ff773fe.jpg)" alt="股票" class="nav-icon">
+                    <span class="nav-label">股票</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            作者: AutoGLM (网页内容由AI生成) Copyright © 2025 AutoGLM. 保留所有权利。
+        </div>
+    </div>
+
+    <!-- 数据输入模态框 -->
+    <div class="modal" id="data-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modal-date">2023年9月1日</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <form id="data-form">
+                <div class="form-group">
+                    <label for="deposit">入金金额</label>
+                    <input type="number" id="deposit" name="deposit" step="0.01" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label for="withdrawal">出金金额</label>
+                    <input type="number" id="withdrawal" name="withdrawal" step="0.01" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label for="balance">账户余额</label>
+                    <input type="number" id="balance" name="balance" step="0.01" placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label for="log">交易日志</label>
+                    <textarea id="log" name="log" placeholder="输入交易日志..."></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" id="cancel-btn">取消</button>
+                    <button type="submit" class="btn btn-primary">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let currentPage = 'gold-page';
+        let currentMonth = new Date().getMonth();
+        let currentYear = new Date().getFullYear();
+        let selectedDate = null;
+        let selectedAssetType = 'gold';
+
+        // 数据存储
+        const assetData = {
+            gold: {},
+            crypto: {},
+            futures: {},
+            stocks: {}
+        };
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 从本地存储加载数据
+            loadDataFromStorage();
+            
+            // 初始化导航
+            initNavigation();
+            
+            // 初始化所有日历
+            initAllCalendars();
+            
+            // 初始化模态框
+            initModal();
+            
+            // 更新统计数据
+            updateAllStats();
+        });
+
+        // 从本地存储加载数据
+        function loadDataFromStorage() {
+            const savedData = localStorage.getItem('traderAssetData');
+            if (savedData) {
+                const parsedData = JSON.parse(savedData);
+                Object.assign(assetData, parsedData);
+            }
+        }
+
+        // 保存数据到本地存储
+        function saveDataToStorage() {
+            localStorage.setItem('traderAssetData', JSON.stringify(assetData));
+        }
+
+        // 初始化导航
+        function initNavigation() {
+            const navItems = document.querySelectorAll('.nav-item');
+            
+            navItems.forEach(item => {
+                item.addEventListener('click', function() {
+                    const targetPage = this.getAttribute('data-page');
+                    
+                    // 更新导航状态
+                    navItems.forEach(nav => nav.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // 切换页面
+                    document.querySelectorAll('.page').forEach(page => {
+                        page.classList.remove('active');
+                    });
+                    document.getElementById(targetPage).classList.add('active');
+                    
+                    // 更新当前页面和资产类型
+                    currentPage = targetPage;
+                    selectedAssetType = targetPage.replace('-page', '');
+                    
+                    // 更新统计数据
+                    updateStats(selectedAssetType);
+                });
+            });
+        }
+
+        // 初始化所有日历
+        function initAllCalendars() {
+            initCalendar('gold');
+            initCalendar('crypto');
+            initCalendar('futures');
+            initCalendar('stocks');
+        }
+
+        // 初始化单个日历
+        function initCalendar(assetType) {
+            const monthYearElement = document.getElementById(`${assetType}-month-year`);
+            const calendarElement = document.getElementById(`${assetType}-calendar`);
+            const prevButton = document.getElementById(`${assetType}-prev-month`);
+            const nextButton = document.getElementById(`${assetType}-next-month`);
+            
+            // 设置初始月份和年份
+            updateMonthYear(assetType, currentMonth, currentYear);
+            
+            // 生成日历
+            generateCalendar(assetType, currentMonth, currentYear);
+            
+            // 添加月份导航事件
+            prevButton.addEventListener('click', function() {
+                currentMonth--;
+                if (currentMonth < 0) {
+                    currentMonth = 11;
+                    currentYear--;
+                }
+                updateMonthYear(assetType, currentMonth, currentYear);
+                generateCalendar(assetType, currentMonth, currentYear);
+            });
+            
+            nextButton.addEventListener('click', function() {
+                currentMonth++;
+                if (currentMonth > 11) {
+                    currentMonth = 0;
+                    currentYear++;
+                }
+                updateMonthYear(assetType, currentMonth, currentYear);
+                generateCalendar(assetType, currentMonth, currentYear);
+            });
+        }
+
+        // 更新月份年份显示
+        function updateMonthYear(assetType, month, year) {
+            const monthNames = ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'];
+            const monthYearElement = document.getElementById(`${assetType}-month-year`);
+            monthYearElement.textContent = `${year}年${monthNames[month]}`;
+        }
+
+        // 生成日历
+        function generateCalendar(assetType, month, year) {
+            const calendarElement = document.getElementById(`${assetType}-calendar`);
+            calendarElement.innerHTML = '';
+            
+            // 添加星期标题 (从周一开始)
+            const dayHeaders = ['一', '二', '三', '四', '五', '六', '日'];
+            dayHeaders.forEach(day => {
+                const dayElement = document.createElement('div');
+                dayElement.classList.add('calendar-day-header');
+                dayElement.textContent = day;
+                calendarElement.appendChild(dayElement);
+            });
+            
+            // 获取当月第一天和最后一天
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            
+            // 获取当月第一天是星期几 (调整为周一开始)
+            let firstDayOfWeek = firstDay.getDay();
+            if (firstDayOfWeek === 0) firstDayOfWeek = 7; // 如果是周日，则调整为7
+            
+            // 添加空白格子
+            for (let i = 1; i < firstDayOfWeek; i++) {
+                const emptyDay = document.createElement('div');
+                calendarElement.appendChild(emptyDay);
+            }
+            
+            // 添加日期格子
+            for (let day = 1; day <= lastDay.getDate(); day++) {
+                const dayElement = document.createElement('div');
+                dayElement.classList.add('calendar-day');
+                dayElement.textContent = day;
+                
+                // 检查是否有数据
+                const dateKey = `${year}-${month + 1}-${day}`;
+                if (assetData[assetType][dateKey]) {
+                    dayElement.classList.add('has-data');
+                    
+                    // 添加余额显示
+                    const balanceElement = document.createElement('div');
+                    balanceElement.classList.add('balance');
+                    balanceElement.textContent = Math.round(assetData[assetType][dateKey].balance);
+                    dayElement.appendChild(balanceElement);
+                    
+                    // 根据盈亏情况设置背景色
+                    if (assetData[assetType][dateKey].balance > 0) {
+                        dayElement.classList.add('profit');
+                    } else if (assetData[assetType][dateKey].balance < 0) {
+                        dayElement.classList.add('loss');
+                    }
+                }
+                
+                // 添加点击事件
+                dayElement.addEventListener('click', function() {
+                    selectedDate = dateKey;
+                    openModal(assetType, year, month, day);
+                });
+                
+                calendarElement.appendChild(dayElement);
+            }
+        }
+
+        // 初始化模态框
+        function initModal() {
+            const modal = document.getElementById('data-modal');
+            const closeBtn = document.querySelector('.modal-close');
+            const cancelBtn = document.getElementById('cancel-btn');
+            const form = document.getElementById('data-form');
+            
+            // 关闭模态框
+            function closeModal() {
+                modal.classList.remove('active');
+                form.reset();
+            }
+            
+            closeBtn.addEventListener('click', closeModal);
+            cancelBtn.addEventListener('click', closeModal);
+            
+            // 点击模态框外部关闭
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeModal();
+                }
+            });
+            
+            // 表单提交
+            form.addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                // 获取表单数据
+                const deposit = parseFloat(document.getElementById('deposit').value) || 0;
+                const withdrawal = parseFloat(document.getElementById('withdrawal').value) || 0;
+                const balance = parseFloat(document.getElementById('balance').value) || 0;
+                const log = document.getElementById('log').value;
+                
+                // 保存数据
+                if (!assetData[selectedAssetType][selectedDate]) {
+                    assetData[selectedAssetType][selectedDate] = {};
+                }
+                
+                assetData[selectedAssetType][selectedDate] = {
+                    deposit,
+                    withdrawal,
+                    balance,
+                    log,
+                    timestamp: new Date().toISOString()
+                };
+                
+                // 保存到本地存储
+                saveDataToStorage();
+                
+                // 更新日历
+                generateCalendar(selectedAssetType, currentMonth, currentYear);
+                
+                // 更新统计数据
+                updateStats(selectedAssetType);
+                
+                // 关闭模态框
+                closeModal();
+            });
+            
+            // 输入框点击时清空内容
+            const inputs = form.querySelectorAll('input');
+            inputs.forEach(input => {
+                input.addEventListener('focus', function() {
+                    if (this.value !== '') {
+                        this.value = '';
+                    }
+                });
+            });
+        }
+
+        // 打开模态框
+        function openModal(assetType, year, month, day) {
+            const modal = document.getElementById('data-modal');
+            const modalDate = document.getElementById('modal-date');
+            const dateKey = `${year}-${month + 1}-${day}`;
+            
+            // 设置日期标题
+            modalDate.textContent = `${year}年${month + 1}月${day}日`;
+            
+            // 如果有数据，填充表单
+            if (assetData[assetType][dateKey]) {
+                const data = assetData[assetType][dateKey];
+                document.getElementById('deposit').value = data.deposit || '';
+                document.getElementById('withdrawal').value = data.withdrawal || '';
+                document.getElementById('balance').value = data.balance || '';
+                document.getElementById('log').value = data.log || '';
+            } else {
+                // 清空表单
+                document.getElementById('data-form').reset();
+            }
+            
+            // 显示模态框
+            modal.classList.add('active');
+        }
+
+        // 更新所有统计数据
+        function updateAllStats() {
+            updateStats('gold');
+            updateStats('crypto');
+            updateStats('futures');
+            updateStats('stocks');
+        }
+
+        // 更新单个资产类型的统计数据
+        function updateStats(assetType) {
+            // 获取当月所有数据
+            const monthData = getMonthData(assetType, currentMonth, currentYear);
+            
+            // 计算统计数据
+            const dailyPnl = calculateDailyPnl(monthData);
+            const monthlyDeposit = calculateMonthlyDeposit(monthData);
+            const monthlyWithdrawal = calculateMonthlyWithdrawal(monthData);
+            const avgDailyReturn = calculateAvgDailyReturn(monthData);
+            const monthlyPnl = calculateMonthlyPnl(monthData);
+            
+            // 更新UI
+            document.getElementById(`${assetType}-daily-pnl`).textContent = `¥${formatNumber(dailyPnl)}`;
+            document.getElementById(`${assetType}-monthly-deposit`).textContent = `¥${formatNumber(monthlyDeposit)}`;
+            document.getElementById(`${assetType}-monthly-withdrawal`).textContent = `¥${formatNumber(monthlyWithdrawal)}`;
+            document.getElementById(`${assetType}-avg-daily-return`).textContent = `${formatNumber(avgDailyReturn)}%`;
+            document.getElementById(`${assetType}-monthly-pnl`).textContent = `¥${formatNumber(monthlyPnl)}`;
+            
+            // 设置盈亏颜色
+            setPnlColor(`${assetType}-daily-pnl`, dailyPnl);
+            setPnlColor(`${assetType}-monthly-pnl`, monthlyPnl);
+        }
+
+        // 获取当月数据
+        function getMonthData(assetType, month, year) {
+            const monthData = {};
+            
+            for (const dateKey in assetData[assetType]) {
+                const [dataYear, dataMonth, day] = dateKey.split('-').map(Number);
+                
+                if (dataYear === year && dataMonth === month + 1) {
+                    monthData[day] = assetData[assetType][dateKey];
+                }
+            }
+            
+            return monthData;
+        }
+
+        // 计算当日盈亏
+        function calculateDailyPnl(monthData) {
+            const today = new Date().getDate();
+            const todayData = monthData[today];
+            
+            if (!todayData) return 0;
+            
+            // 简化计算：当日余额 - 前一日余额
+            const prevDayData = monthData[today - 1];
+            const prevBalance = prevDayData ? prevDayData.balance : 0;
+            
+            return todayData.balance - prevBalance;
+        }
+
+        // 计算当月入金金额
+        function calculateMonthlyDeposit(monthData) {
+            let totalDeposit = 0;
+            
+            for (const day in monthData) {
+                if (monthData[day].deposit) {
+                    totalDeposit += monthData[day].deposit;
+                }
+            }
+            
+            return totalDeposit;
+        }
+
+        // 计算当月出金金额
+        function calculateMonthlyWithdrawal(monthData) {
+            let totalWithdrawal = 0;
+            
+            for (const day in monthData) {
+                if (monthData[day].withdrawal) {
+                    totalWithdrawal += monthData[day].withdrawal;
+                }
+            }
+            
+            return totalWithdrawal;
+        }
+
+        // 计算平均日复利
+        function calculateAvgDailyReturn(monthData) {
+            const days = Object.keys(monthData).map(Number).sort((a, b) => a - b);
+            
+            if (days.length < 2) return 0;
+            
+            let totalReturn = 0;
+            let count = 0;
+            
+            for (let i = 1; i < days.length; i++) {
+                const prevDay = days[i - 1];
+                const currDay = days[i];
+                
+                const prevBalance = monthData[prevDay].balance || 0;
+                const currBalance = monthData[currDay].balance || 0;
+                
+                if (prevBalance !== 0) {
+                    const dayReturn = ((currBalance - prevBalance) / prevBalance) * 100;
+                    totalReturn += dayReturn;
+                    count++;
+                }
+            }
+            
+            return count > 0 ? totalReturn / count : 0;
+        }
+
+        // 计算当月盈亏金额
+        function calculateMonthlyPnl(monthData) {
+            const days = Object.keys(monthData).map(Number).sort((a, b) => a - b);
+            
+            if (days.length === 0) return 0;
+            
+            const firstDay = days[0];
+            const lastDay = days[days.length - 1];
+            
+            const firstBalance = monthData[firstDay].balance || 0;
+            const lastBalance = monthData[lastDay].balance || 0;
+            
+            const totalDeposit = calculateMonthlyDeposit(monthData);
+            const totalWithdrawal = calculateMonthlyWithdrawal(monthData);
+            
+            // 当月盈亏 = 期末余额 - 期初余额 - 当月入金 + 当月出金
+            return lastBalance - firstBalance - totalDeposit + totalWithdrawal;
+        }
+
+        // 格式化数字
+        function formatNumber(num) {
+            return Math.round(num).toLocaleString();
+        }
+
+        // 设置盈亏颜色
+        function setPnlColor(elementId, value) {
+            const element = document.getElementById(elementId);
+            
+            if (value > 0) {
+                element.classList.add('positive');
+                element.classList.remove('negative');
+            } else if (value < 0) {
+                element.classList.add('negative');
+                element.classList.remove('positive');
+            } else {
+                element.classList.remove('positive', 'negative');
+            }
+        }
+    </script>
+</body>
+</html>
