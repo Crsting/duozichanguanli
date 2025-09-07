@@ -773,7 +773,7 @@
                     monthlyProfitLoss += dayProfitLoss;
                 }
                 
-               // 计算平均日复利
+                // 计算平均日复利
                 if (monthData.length > 1) {
                     const firstBalance = parseFloat(monthData[0].data.balance);
                     const lastBalance = parseFloat(monthData[monthData.length - 1].data.balance);
@@ -783,9 +783,13 @@
                     const lastDay = monthData[monthData.length - 1].day;
                     const periodDays = lastDay - firstDay + 1;
                     
-                    // 使用新公式计算平均日复利
-                    if (periodDays > 0) {
-                        avgDailyCompound = (lastBalance - firstBalance) / periodDays;
+                    // 使用几何平均数计算平均日复利
+                    if (periodDays > 0 && firstBalance > 0) {
+                        // 公式：平均日复利 = (最后一日余额 / 第一日余额)^(1/期间天数) - 1
+                        avgDailyCompound = Math.pow(lastBalance / firstBalance, 1 / periodDays) - 1;
+                    } else {
+                        // 处理零值或负值情况
+                        avgDailyCompound = 0;
                     }
                 }
             }
