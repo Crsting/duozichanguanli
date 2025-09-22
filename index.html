@@ -775,19 +775,19 @@
                 
                 // 计算平均日复利
                 if (monthData.length > 1) {
-                    const firstBalance = parseFloat(monthData[0].data.balance);
-                    const lastBalance = parseFloat(monthData[monthData.length - 1].data.balance);
-                    
                     // 计算期间天数（最后一日 - 第一日 + 1）
                     const firstDay = monthData[0].day;
                     const lastDay = monthData[monthData.length - 1].day;
                     const periodDays = lastDay - firstDay + 1;
                     
-                    // 使用新公式计算平均日复利
-                    if (periodDays > 0 && firstBalance > 0) {
-                        // 公式：平均日复利 = (（当月记录最后一日余额 + 当月出金金额合计 - 当月入金金额合计）/ 当月记录第一日余额)^(1/期间天数) - 1
-                        const adjustedLastBalance = lastBalance + monthlyWithdrawal - monthlyDeposit ;
-                        avgDailyCompound = Math.pow(adjustedLastBalance / firstBalance, 1 / periodDays) - 1;
+                    // 使用新公式计算平均日复利：平均日复利 = (当月盈亏金额)^(1/期间天数) - 1
+                    if (periodDays > 0 && monthlyProfitLoss > 0) {
+                        try {
+                            avgDailyCompound = Math.pow(monthlyProfitLoss, 1 / periodDays) - 1;
+                        } catch (error) {
+                            // 处理数学错误（如负数开方等）
+                            avgDailyCompound = 0;
+                        }
                     } else {
                         // 处理零值或负值情况
                         avgDailyCompound = 0;
