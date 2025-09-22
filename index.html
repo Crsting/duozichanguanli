@@ -785,8 +785,8 @@
                     
                     // 使用新公式计算平均日复利
                     if (periodDays > 0 && firstBalance > 0) {
-                        // 公式：平均日复利 = (（当月记录最后一日余额 + 当月入金金额合计 - 当月出金金额合计）/ 当月记录第一日余额)^(1/期间天数) - 1
-                        const adjustedLastBalance = lastBalance + monthlyDeposit - monthlyWithdrawal;
+                        // 公式：平均日复利 = (（当月记录最后一日余额 + 当月出金金额合计 - 当月入金金额合计）/ 当月记录第一日余额)^(1/期间天数) - 1
+                        const adjustedLastBalance = lastBalance + monthlyWithdrawal - monthlyDeposit ;
                         avgDailyCompound = Math.pow(adjustedLastBalance / firstBalance, 1 / periodDays) - 1;
                     } else {
                         // 处理零值或负值情况
