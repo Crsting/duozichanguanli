@@ -774,38 +774,25 @@
                 }
                 
                 // 计算平均日复利
-                if (monthData.length > 1) {
+                if (monthData.length > 0) {
                     // 获取所需变量
                     const firstDayData = monthData[0].data;
-                    const lastDayData = monthData[monthData.length - 1].data;
                     const firstDayBalance = parseFloat(firstDayData.balance) || 0;
-                    const lastDayBalance = parseFloat(lastDayData.balance) || 0;
-                    const totalDeposits = monthlyDeposit;
-                    const totalWithdrawals = monthlyWithdrawal;
                     
                     // 计算期间天数（使用当月最后一个有记录的日期数）
-                    const firstDay = monthData[0].day;
                     const lastDay = monthData[monthData.length - 1].day;
-                    const daysCount = lastDay;
+                    const periodDays = lastDay;
                     
                     // 使用新公式计算平均日复利
-                    // 平均日复利 = (当月盈亏金额 / (期末日余额 + 当月入金金额合计 - 期初日余额 - 当月出金金额合计)) ^ (1/期间天数) - 1
-                    if (daysCount > 0) {
+                    // 平均日复利 = (当月盈亏金额 / 期初日金额) ^ (1/期间天数) - 1
+                    if (periodDays > 0 && firstDayBalance !== 0) {
                         try {
-                            // 计算分母
-                            const denominator = lastDayBalance + totalDeposits - firstDayBalance - totalWithdrawals;
+                            // 计算收益率
+                            const rate = monthlyProfitLoss / firstDayBalance;
                             
-                            // 避免除零错误
-                            if (denominator !== 0) {
-                                // 计算收益率
-                                const rate = monthlyProfitLoss / denominator;
-                                
-                                // 避免负数开方
-                                if (rate > 0) {
-                                    avgDailyCompound = Math.pow(rate, 1 / daysCount) - 1;
-                                } else {
-                                    avgDailyCompound = 0;
-                                }
+                            // 避免负数开方
+                            if (rate > -1) {
+                                avgDailyCompound = Math.pow(1 + rate, 1 / periodDays) - 1;
                             } else {
                                 avgDailyCompound = 0;
                             }
